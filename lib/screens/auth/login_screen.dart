@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/biometric_service.dart';
 import '../../theme/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -38,8 +41,36 @@ class _LoginScreenState extends State<LoginScreen>
       parent: _animController,
       curve: Curves.easeOutCubic,
     ));
-    _animController.forward();
+    _animController.forward();    _checkBiometrics();
   }
+
+  Future<void> _checkBiometrics() async {
+    final available = await BiometricService.isBiometricAvailable();
+    final enabled = await BiometricService.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
+      // Auto-trigger biometric if enabled and user has token
+      if (enabled && available) {
+        _authenticateWithBiometrics();
+      }
+    }
+  }
+
+  Future<void> _authenticateWithBiometrics() async {
+    final auth = context.read<AuthProvider>();
+    // Check if user was previously logged in
+    await auth.checkAuth();
+    if (auth.isLoggedIn && mounted) {
+      final success = await BiometricService.authenticate(
+        reason: 'Authenticate to access your account',
+      );
+      if (success && mounted) {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      }
+    }  }
 
   @override
   void dispose() {
@@ -263,6 +294,13 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                       const SizedBox(height: 32),
+                      // Biometric Login
+                      if (_biometricAvailable && _biometricEnabled) ...[
+                        _buildDivider(),
+                        const SizedBox(height: 16),
+                        _buildBiometricButton(),
+                        const SizedBox(height: 16),
+                      ],
                       // Register Link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -341,6 +379,56 @@ class _LoginScreenState extends State<LoginScreen>
             const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       ),
       validator: validator,
+    );
+  }
+
+  Widget _buildDivider() {
+    return const Row(
+      children: [
+        Expanded(child: Divider(color: AppColors.line)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'or',
+            style: TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+        ),
+        Expanded(child: Divider(color: AppColors.line)),
+      ],
+    );
+  }
+
+  Widget _buildBiometricButton() {
+    return InkWell(
+      onTap: _authenticateWithBiometrics,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.fingerprint_rounded,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Login with Fingerprint',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

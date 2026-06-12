@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/data_plan.dart';
 import '../models/transaction.dart';
+import '../models/banner_item.dart';
 import '../services/api_service.dart';
 
 class ServiceProvider extends ChangeNotifier {
   // Dashboard
   Map<String, dynamic>? _dashboard;
   bool _dashboardLoading = false;
+
+  // Banners
+  List<BannerItem> _banners = [];
+  bool _bannersLoading = false;
 
   // Data Plans
   List<DataPlan> _dataPlans = [];
@@ -52,6 +57,8 @@ class ServiceProvider extends ChangeNotifier {
   bool get cableLoading => _cableLoading;
   bool get purchasing => _purchasing;
   String? get purchaseMessage => _purchaseMessage;
+  List<BannerItem> get banners => _banners;
+  bool get bannersLoading => _bannersLoading;
 
   Future<void> fetchDashboard() async {
     _dashboardLoading = true;
@@ -63,6 +70,24 @@ class ServiceProvider extends ChangeNotifier {
       }
     } catch (_) {}
     _dashboardLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> fetchBanners() async {
+    _bannersLoading = true;
+    notifyListeners();
+    try {
+      final res = await ApiService.getBanners();
+      if (res['status'] == 'success') {
+        final list = res['data'] ?? res['banners'] ?? [];
+        _banners = (list as List)
+            .map((e) => BannerItem.fromJson(e))
+            .where((b) => b.isActive)
+            .toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      }
+    } catch (_) {}
+    _bannersLoading = false;
     notifyListeners();
   }
 

@@ -35,7 +35,24 @@ jobs:
       - name: Build APK (release)
         run: flutter build apk --release
 
-      - name: Upload APKs
+      - name: Rename APKs for website
+        run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk abjikdata-app-debug.apk
+          cp build/app/outputs/flutter-apk/app-release.apk abjikdata-app.apk
+
+      - name: Upload APK to website via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: /downloads/
+          include: |
+            abjikdata-app.apk
+            abjikdata-app-debug.apk
+
+      - name: Upload APKs as GitHub Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-apks

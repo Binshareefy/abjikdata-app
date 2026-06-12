@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/kpi_card.dart';
 import '../../widgets/service_button.dart';
 import '../../widgets/transaction_tile.dart';
+import '../../widgets/banner_slider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -33,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ServiceProvider>().fetchDashboard();
       context.read<ServiceProvider>().fetchTransactions();
+      context.read<ServiceProvider>().fetchBanners();
     });
   }
 
@@ -69,6 +71,12 @@ class _DashboardScreenState extends State<DashboardScreen>
               // Balance Card
               _buildBalanceCard(user, currencyFormat),
               const SizedBox(height: 20),
+
+              // Banner Slider
+              if (service.banners.isNotEmpty) ...[
+                BannerSlider(banners: service.banners),
+                const SizedBox(height: 20),
+              ],
 
               // KPIs
               if (service.dashboard != null) ...[

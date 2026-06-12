@@ -185,6 +185,15 @@ class ApiService {
     return _parseResponse(res);
   }
 
+  // Banners
+  static Future<Map<String, dynamic>> getBanners() async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/banners'),
+      headers: _headers,
+    );
+    return _parseResponse(res);
+  }
+
   // Parse response - handles both JSON and HTML responses
   static Map<String, dynamic> _parseResponse(http.Response res) {
     try {

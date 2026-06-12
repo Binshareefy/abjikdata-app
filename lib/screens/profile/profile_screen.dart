@@ -2,10 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/biometric_service.dart';
 import '../../theme/app_colors.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricState();
+  }
+
+  Future<void> _loadBiometricState() async {
+    final available = await BiometricService.isBiometricAvailable();
+    final enabled = await BiometricService.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      final authenticated = await BiometricService.authenticate(
+        reason: 'Verify your identity to enable fingerprint login',
+      );
+      if (authenticated) {
+        await BiometricService.enableBiometric();
+        setState(() => _biometricEnabled = true);
+      }
+    } else {
+      await BiometricService.disableBiometric();
+      setState(() => _biometricEnabled = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +152,53 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Biometric Toggle
+            if (_biometricAvailable)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.fingerprint_rounded,
+                          color: AppColors.primary, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Fingerprint Login',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                  fontSize: 14)),
+                          SizedBox(height: 2),
+                          Text('Use fingerprint to login and authorize transactions',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppColors.muted)),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _biometricEnabled,
+                      activeColor: AppColors.primary,
+                      onChanged: _toggleBiometric,
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
 
             // Info Cards
             _InfoTile(
