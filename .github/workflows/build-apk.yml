@@ -40,16 +40,17 @@ jobs:
           cp build/app/outputs/flutter-apk/app-debug.apk abjikdata-app-debug.apk
           cp build/app/outputs/flutter-apk/app-release.apk abjikdata-app.apk
 
-      - name: Upload APK to website via SCP
+      - name: Upload APK to website via FTP
         if: ${{ secrets.SSH_PASSWORD != '' }}
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-            "mkdir -p /home/${{ secrets.SSH_USERNAME }}/public_html/downloads"
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no \
-            abjikdata-app.apk abjikdata-app-debug.apk \
-            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/public_html/downloads/
+          curl -T abjikdata-app.apk \
+            ftp://${{ secrets.SSH_HOST }}/public_html/downloads/ \
+            --user "${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_PASSWORD }}" \
+            --ftp-create-dirs --insecure
+          curl -T abjikdata-app-debug.apk \
+            ftp://${{ secrets.SSH_HOST }}/public_html/downloads/ \
+            --user "${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_PASSWORD }}" \
+            --ftp-create-dirs --insecure
 
       - name: Upload APKs as GitHub Artifact
         uses: actions/upload-artifact@v4
