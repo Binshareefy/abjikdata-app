@@ -19,7 +19,8 @@ class ServiceButton extends StatefulWidget {
   State<ServiceButton> createState() => _ServiceButtonState();
 }
 
-class _ServiceButtonState extends State<ServiceButton> {
+class _ServiceButtonState extends State<ServiceButton>
+    with SingleTickerProviderStateMixin {
   bool _pressed = false;
 
   @override
@@ -33,20 +34,24 @@ class _ServiceButtonState extends State<ServiceButton> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        scale: _pressed ? 0.9 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutBack,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.line),
+            color: _pressed ? accentColor.withOpacity(0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: _pressed ? accentColor.withOpacity(0.3) : AppColors.line.withOpacity(0.5),
+            ),
             boxShadow: _pressed
                 ? []
                 : [
                     BoxShadow(
-                      color: accentColor.withOpacity(0.08),
-                      blurRadius: 8,
+                      color: accentColor.withOpacity(0.06),
+                      blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -55,20 +60,28 @@ class _ServiceButtonState extends State<ServiceButton> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      accentColor.withOpacity(0.12),
+                      accentColor.withOpacity(0.04),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(widget.icon, color: accentColor, size: 28),
+                child: Icon(widget.icon, color: accentColor, size: 26),
               ),
               const SizedBox(height: 8),
               Text(
                 widget.label,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textDark,
+                  letterSpacing: -0.2,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
