@@ -397,22 +397,3 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 }
-                        style: TextStyle(color: AppColors.muted)),
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pushReplacementNamed(context, '/login'),
-                      child: const Text('Sign In',
-                          style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
