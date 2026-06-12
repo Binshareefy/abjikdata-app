@@ -41,8 +41,12 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk abjikdata-app.apk
 
       - name: Upload APK to website via SCP
+        if: ${{ secrets.SSH_PASSWORD != '' }}
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+            "mkdir -p /home/${{ secrets.SSH_USERNAME }}/public_html/downloads"
           sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no \
             abjikdata-app.apk abjikdata-app-debug.apk \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/public_html/downloads/
