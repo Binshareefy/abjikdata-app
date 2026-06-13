@@ -108,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           width: 90,
                           height: 90,
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
@@ -118,8 +118,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.person_add_rounded,
-                              color: Colors.white, size: 40),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

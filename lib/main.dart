@@ -139,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 110,
                       height: 110,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
@@ -149,20 +149,22 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.flash_on_rounded,
-                        size: 60,
-                        color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 28),
                     const Text(
-                      'ABJIKDATA',
+                      'Abjikdata',
                       style: TextStyle(
                         fontSize: 34,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 4,
+                        letterSpacing: 2,
                       ),
                     ),
                     const SizedBox(height: 10),

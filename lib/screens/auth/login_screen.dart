@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen>
                           width: 90,
                           height: 90,
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
@@ -132,10 +132,9 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.flash_on_rounded,
-                            color: Colors.white,
-                            size: 44,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
                           ),
                         ),
                       ),
