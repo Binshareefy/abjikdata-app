@@ -70,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
       if (res['status'] == 'success') {
         // Store session cookie
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('session_cookie', ApiService._sessionCookie ?? '');
+        await prefs.setString('session_cookie', ApiService.sessionCookie ?? '');
         if (res['data'] != null && res['data'] is Map) {
           _user = User.fromJson(res['data']);
         } else {
