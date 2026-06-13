@@ -16,9 +16,9 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    if (token != null) {
-      ApiService.setToken(token);
+    final sessionId = prefs.getString('session_id');
+    if (sessionId != null) {
+      ApiService.setSessionId(sessionId);
       _isLoggedIn = true;
       await fetchProfile();
     }
@@ -32,11 +32,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await ApiService.login(email, password);
       if (res['status'] == 'success') {
-        final token = res['token'] ?? res['data']?['token'];
-        if (token != null) {
+        final sessionId = res['session_id'] ?? res['data']?['session_id'];
+        if (sessionId != null) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', token);
-          ApiService.setToken(token);
+          await prefs.setString('session_id', sessionId);
+          ApiService.setSessionId(sessionId);
         }
         _user = User.fromJson(res['data'] ?? res);
         _isLoggedIn = true;
@@ -65,11 +65,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await ApiService.register(data);
       if (res['status'] == 'success') {
-        final token = res['token'] ?? res['data']?['token'];
-        if (token != null) {
+        final sessionId = res['session_id'] ?? res['data']?['session_id'];
+        if (sessionId != null) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', token);
-          ApiService.setToken(token);
+          await prefs.setString('session_id', sessionId);
+          ApiService.setSessionId(sessionId);
         }
         _user = User.fromJson(res['data'] ?? res);
         _isLoggedIn = true;
@@ -102,8 +102,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    ApiService.setToken(null);
+    await prefs.remove('session_id');
+    ApiService.setSessionId(null);
     _user = null;
     _isLoggedIn = false;
     notifyListeners();

@@ -3,15 +3,16 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   static const String baseUrl = 'https://abjikdata.com.ng';
+  static const String apiEndpoint = '$baseUrl/process.php';
   static String? _token;
-  static String? _csrfToken;
+  static String? _sessionId;
 
   static void setToken(String? token) {
     _token = token;
   }
 
-  static void setCsrfToken(String? token) {
-    _csrfToken = token;
+  static void setSessionId(String? sessionId) {
+    _sessionId = sessionId;
   }
 
   static Map<String, String> get _headers => {
@@ -19,7 +20,6 @@ class ApiService {
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
     if (_token != null) 'Authorization': 'Bearer $_token',
-    if (_csrfToken != null) 'X-CSRF-TOKEN': _csrfToken ?? '',
   };
 
   // Helper to convert Map to form-encoded body
@@ -29,181 +29,129 @@ class ApiService {
         .join('&');
   }
 
+  // Core API call - all requests go through process.php
+  static Future<Map<String, dynamic>> _call(String action, Map<String, dynamic> data) async {
+    final body = Map<String, dynamic>.from(data);
+    body['action'] = action;
+    if (_sessionId != null) body['session_id'] = _sessionId;
+
+    try {
+      final res = await http.post(
+        Uri.parse(apiEndpoint),
+        headers: _headers,
+        body: _formEncode(body),
+      );
+      return _parseResponse(res);
+    } catch (e) {
+      return {'status': 'error', 'message': 'Connection error. Please try again.'};
+    }
+  }
+
   // Auth
   static Future<Map<String, dynamic>> login(String email, String password) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/login'),
-      headers: _headers,
-      body: _formEncode({'email': email, 'password': password}),
-    );
-    return _parseResponse(res);
+    final res = await _call('login', {
+      'email': email,
+      'password': password,
+    });
+    if (res['session_id'] != null) {
+      _sessionId = res['session_id'];
+    }
+    return res;
   }
 
   static Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/register'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    final res = await _call('register', data);
+    if (res['session_id'] != null) {
+      _sessionId = res['session_id'];
+    }
+    return res;
   }
 
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/forgot-password'),
-      headers: _headers,
-      body: _formEncode({'email': email}),
-    );
-    return _parseResponse(res);
+    return _call('forgot_password', {'email': email});
   }
 
   // Dashboard
   static Future<Map<String, dynamic>> getDashboard() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/api/dashboard'),
-      headers: _headers,
-    );
-    return _parseResponse(res);
+    return _call('get_dashboard', {});
   }
 
   // Services
   static Future<Map<String, dynamic>> getDataPlans({String? network}) async {
-    final uri = Uri.parse('$baseUrl/api/data-plans').replace(
-      queryParameters: network != null ? {'network': network} : null,
-    );
-    final res = await http.get(uri, headers: _headers);
-    return _parseResponse(res);
+    final data = <String, dynamic>{};
+    if (network != null && network != 'all') data['network'] = network;
+    return _call('get_data_plans', data);
   }
 
   static Future<Map<String, dynamic>> purchaseData(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/data/purchase'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('purchase_data', data);
   }
 
   static Future<Map<String, dynamic>> purchaseAirtime(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/airtime/purchase'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('purchase_airtime', data);
   }
 
   static Future<Map<String, dynamic>> getElectricityProviders() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/api/electricity/providers'),
-      headers: _headers,
-    );
-    return _parseResponse(res);
+    return _call('get_electricity_providers', {});
   }
 
   static Future<Map<String, dynamic>> payElectricity(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/electricity/pay'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('pay_electricity', data);
   }
 
   static Future<Map<String, dynamic>> getCablePlans({String? provider}) async {
-    final uri = Uri.parse('$baseUrl/api/cable/plans').replace(
-      queryParameters: provider != null ? {'provider': provider} : null,
-    );
-    final res = await http.get(uri, headers: _headers);
-    return _parseResponse(res);
+    final data = <String, dynamic>{};
+    if (provider != null) data['provider'] = provider;
+    return _call('get_cable_plans', data);
   }
 
   static Future<Map<String, dynamic>> subscribeCable(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/cable/subscribe'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('subscribe_cable', data);
   }
 
   // Transactions
   static Future<Map<String, dynamic>> getTransactions({int page = 1, String? type}) async {
-    final uri = Uri.parse('$baseUrl/api/transactions').replace(
-      queryParameters: {
-        'page': page.toString(),
-        if (type != null) 'type': type,
-      },
-    );
-    final res = await http.get(uri, headers: _headers);
-    return _parseResponse(res);
+    final data = <String, dynamic>{'page': page.toString()};
+    if (type != null) data['type'] = type;
+    return _call('get_transactions', data);
   }
 
   // Referrals
   static Future<Map<String, dynamic>> getReferrals() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/api/referrals'),
-      headers: _headers,
-    );
-    return _parseResponse(res);
+    return _call('get_referrals', {});
   }
 
   // Profile
   static Future<Map<String, dynamic>> getProfile() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/api/profile'),
-      headers: _headers,
-    );
-    return _parseResponse(res);
+    return _call('get_profile', {});
   }
 
   static Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/profile'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('update_profile', data);
   }
 
   // Verification
   static Future<Map<String, dynamic>> verifyNin(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/verify/nin'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('verify_nin', data);
   }
 
   static Future<Map<String, dynamic>> verifyBvn(Map<String, dynamic> data) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/verify/bvn'),
-      headers: _headers,
-      body: _formEncode(data),
-    );
-    return _parseResponse(res);
+    return _call('verify_bvn', data);
   }
 
   // Banners
   static Future<Map<String, dynamic>> getBanners() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/api/banners'),
-      headers: _headers,
-    );
-    return _parseResponse(res);
+    return _call('get_banners', {});
   }
 
-  // Parse response - handles both JSON and HTML responses
+  // Parse response
   static Map<String, dynamic> _parseResponse(http.Response res) {
     try {
-      return jsonDecode(res.body);
+      return jsonDecode(res.body) as Map<String, dynamic>;
     } catch (_) {
-      // If not JSON, return a structured error
       return {
         'status': 'error',
-        'message': 'Server returned an invalid response. Status: ${res.statusCode}',
-        'code': res.statusCode,
+        'message': 'Server returned an invalid response.',
       };
     }
   }
