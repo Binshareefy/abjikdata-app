@@ -16,9 +16,9 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
-    final sessionId = prefs.getString('session_id');
-    if (sessionId != null) {
-      ApiService.setSessionId(sessionId);
+    final cookie = prefs.getString('session_cookie');
+    if (cookie != null) {
+      ApiService.setSessionCookie(cookie);
       _isLoggedIn = true;
       await fetchProfile();
     }
@@ -32,13 +32,16 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await ApiService.login(email, password);
       if (res['status'] == 'success') {
-        final sessionId = res['session_id'] ?? res['data']?['session_id'];
-        if (sessionId != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('session_id', sessionId);
-          ApiService.setSessionId(sessionId);
+        // Store session cookie for future requests
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('session_cookie', ApiService.sessionCookie ?? '');
+        // Try to get user data from response
+        if (res['data'] != null && res['data'] is Map) {
+          _user = User.fromJson(res['data']);
+        } else {
+          // Create minimal user from response
+          _user = User.fromJson(res);
         }
-        _user = User.fromJson(res['data'] ?? res);
         _isLoggedIn = true;
         _loading = false;
         notifyListeners();
@@ -65,11 +68,13 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await ApiService.register(data);
       if (res['status'] == 'success') {
-        final sessionId = res['session_id'] ?? res['data']?['session_id'];
-        if (sessionId != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('session_id', sessionId);
-          ApiService.setSessionId(sessionId);
+        // Store session cookie
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('session_cookie', ApiService._sessionCookie ?? '');
+        if (res['data'] != null && res['data'] is Map) {
+          _user = User.fromJson(res['data']);
+        } else {
+          _user = User.fromJson(res);
         }
         _user = User.fromJson(res['data'] ?? res);
         _isLoggedIn = true;
@@ -102,8 +107,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('session_id');
-    ApiService.setSessionId(null);
+    await prefs.remove('session_cookie');
+    ApiService.setSessionCookie(null);
     _user = null;
     _isLoggedIn = false;
     notifyListeners();

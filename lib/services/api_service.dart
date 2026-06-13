@@ -4,21 +4,24 @@ import 'package:http/http.dart' as http;
 class ApiService {
   static const String baseUrl = 'https://abjikdata.com.ng';
   static const String apiEndpoint = '$baseUrl/process.php';
+  static String? _sessionCookie;
   static String? _token;
-  static String? _sessionId;
+
+  static String? get sessionCookie => _sessionCookie;
 
   static void setToken(String? token) {
     _token = token;
   }
 
-  static void setSessionId(String? sessionId) {
-    _sessionId = sessionId;
+  static void setSessionCookie(String? cookie) {
+    _sessionCookie = cookie;
   }
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
+    if (_sessionCookie != null) 'Cookie': _sessionCookie!,
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
@@ -29,11 +32,10 @@ class ApiService {
         .join('&');
   }
 
-  // Core API call - all requests go through process.php
+  // Core API call
   static Future<Map<String, dynamic>> _call(String action, Map<String, dynamic> data) async {
     final body = Map<String, dynamic>.from(data);
     body['action'] = action;
-    if (_sessionId != null) body['session_id'] = _sessionId;
 
     try {
       final res = await http.post(
@@ -41,30 +43,29 @@ class ApiService {
         headers: _headers,
         body: _formEncode(body),
       );
+
+      // Store session cookie from response
+      final setCookie = res.headers['set-cookie'];
+      if (setCookie != null) {
+        _sessionCookie = setCookie.split(';').first;
+      }
+
       return _parseResponse(res);
     } catch (e) {
-      return {'status': 'error', 'message': 'Connection error. Please try again.'};
+      return {'status': 'error', 'message': 'Connection error: ${e.toString()}'};
     }
   }
 
   // Auth
   static Future<Map<String, dynamic>> login(String email, String password) async {
-    final res = await _call('login', {
+    return _call('login', {
       'email': email,
       'password': password,
     });
-    if (res['session_id'] != null) {
-      _sessionId = res['session_id'];
-    }
-    return res;
   }
 
   static Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    final res = await _call('register', data);
-    if (res['session_id'] != null) {
-      _sessionId = res['session_id'];
-    }
-    return res;
+    return _call('register', data);
   }
 
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
@@ -151,7 +152,7 @@ class ApiService {
     } catch (_) {
       return {
         'status': 'error',
-        'message': 'Server returned an invalid response.',
+        'message': 'Server error. Status: ${res.statusCode}',
       };
     }
   }
